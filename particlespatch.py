@@ -35,6 +35,7 @@ class App(QtWidgets.QMainWindow):
 
     folder:str=""
     currentFile:str=""
+    data:dict={}
     textureFile:str=""
     packroot:str=""
     textures:dict={}
@@ -51,6 +52,7 @@ class App(QtWidgets.QMainWindow):
         self.texturePicker.itemSelectionChanged.connect(self.selectTexture)
 
         self.setParticleButton.clicked.connect(self.setAsParticle)
+        self.saveButton.clicked.connect(self.saveToFile)
 
         self.show()
         
@@ -62,8 +64,8 @@ class App(QtWidgets.QMainWindow):
         self.folder=self.workFolderInput.text()
         cfgParser.set("Temporary","last_used_path",self.folder)
         writeConfig()
-        self.listDirToShow(self.folder)
         self.packroot=getRootDir(self.folder)
+        self.listDirToShow(self.folder)
     def chooseFolder(self):
         dialog=QFileDialog(self,directory=self.workFolderInput.text())
         dialog.setFileMode(QFileDialog.FileMode.DirectoryOnly)
@@ -74,16 +76,35 @@ class App(QtWidgets.QMainWindow):
         self.workFolderInput.setText(path)
         self.setFolder()
 
+    def listDirRecursive(self,folder:str):
+        files=os.listdir(folder)
+        files.sort()
+        files2=[]
+        files3=[]
+        for file in files:
+            absfile=os.path.join(folder,file)
+            if os.path.isdir(absfile):
+                for file2 in self.listDirRecursive(absfile):
+                    files2.append(os.path.join(file,file2))
+            elif file.endswith(".json"):
+                files3.append(file)
+        files2.extend(files3)
+        return files2
+
     def listDirToShow(self,folder:str):
         self.fileList.clearContents()
         self.fileList.setRowCount(0)
-        files=os.listdir(folder)
-        files.sort()
+        # files=os.listdir(folder)
+        files=self.listDirRecursive(folder)
+        # files.sort()
         for file in files:
             row = self.fileList.rowCount()
             self.fileList.insertRow(row)
             self.fileList.setItem(row,0,QTableWidgetItem(file))
-            self.fileList.setItem(row,1,QTableWidgetItem(getParticle(self.readFile(file))))
+            with open(os.path.join(self.folder,file),"r") as f:
+                data=json.load(f)
+            self.fileList.setItem(row,1,QTableWidgetItem(
+                lookupParentParticle(self.packroot,data)))
     
     def readFile(self,path):
         try:
@@ -98,11 +119,12 @@ class App(QtWidgets.QMainWindow):
     def selectFile(self):
         file=self.fileList.selectedItems()[0].text()
         self.currentFile=file
+        self.data=self.readFile(file)
         # print(file)
-        self.textures=self.listTextures(file)
         self.showTextures()
 
     def showTextures(self):
+        self.textures=self.listTextures()
         textures=copy.deepcopy(self.textures)
         self.texturePicker.clearContents()
         self.texturePicker.setRowCount(0)
@@ -112,8 +134,8 @@ class App(QtWidgets.QMainWindow):
             self.texturePicker.setItem(row,0,QTableWidgetItem(key))
             self.texturePicker.setItem(row,1,QTableWidgetItem(textures[key]))
 
-    def listTextures(self,file):
-        data=self.readFile(file)
+    def listTextures(self):
+        data=self.data
         return getAllTextures(data)
     
     def selectTexture(self):
@@ -127,7 +149,7 @@ class App(QtWidgets.QMainWindow):
         self.updateTexture()
 
     def updateTexture(self):
-        self.textureLabel.setText(self.textureFile.removeprefix(self.packroot))
+        self.textureLabel.setText(getResourceLocation(self.packroot,self.textureFile))
         def getScale(pix:QWidget,view:QWidget):
             pw=pix.width()
             ph=pix.height()
@@ -148,6 +170,7 @@ class App(QtWidgets.QMainWindow):
     def lookupTexture(self,texture:str):
         path=lookupTexture(self.packroot,texture,self.textures)
         return path
+    
     def setAsParticle(self):
         selected=self.texturePicker.selectedItems()
         if selected.__len__()<2:
@@ -156,8 +179,16 @@ class App(QtWidgets.QMainWindow):
         if texture.startswith("__e"):
             texture=selected[1].text()
         else:
-            texture="#"+texture
-        print(texture)
+            texture="#"+texture.removeprefix("#")
+        self.data["textures"]["particle"]=texture
+        self.showTextures()
+    def saveToFile(self):
+        data=self.data
+        with open(os.path.join(self.folder,self.currentFile),"w") as f:
+            json.dump(data,f,indent=2)
+        row=self.fileList.currentRow()
+        self.fileList.setItem(row,1,QTableWidgetItem(getParticle(self.readFile(self.currentFile))))
+
 
 
 app = QtWidgets.QApplication(sys.argv)
