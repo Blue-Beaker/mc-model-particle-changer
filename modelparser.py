@@ -6,10 +6,12 @@ def getTextures(data:dict):
     if 'textures' in data:
         return data['textures']
     return {}
+
 def getElements(data:dict):
     if 'elements' in data:
         return data['elements']
     return []
+
 def getAllTextures(data:dict):
     textures=copy.deepcopy(getTextures(data))
     for i,element in enumerate(getElements(data)):
@@ -93,4 +95,20 @@ def lookupParentParticle(pack:str,data:dict):
                     return lookupParentParticle(pack,json.load(f))
     except:
         traceback.print_exc()
-    
+
+def setParticle(particle:str,data:dict):
+    data2=copy.deepcopy(data)
+    if not 'texture' in data2:
+        data2['texture']={}
+    data2['texture']['particle']=particle
+    return data2
+
+def readFile(path:str):
+    with open(path,"r") as f:
+        return json.load(f)
+
+def writeFile(path:str,data:dict,overwrite:bool=False):
+    if os.path.exists(path) and not overwrite:
+        return
+    with open(path,"r") as f:
+        json.dump(data,f,indent=2)
