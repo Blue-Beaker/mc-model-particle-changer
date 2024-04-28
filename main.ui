@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>941</width>
-    <height>618</height>
+    <height>665</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -158,6 +158,9 @@
        </item>
        <item>
         <widget class="QTableWidget" name="texturePicker">
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
          <property name="selectionMode">
           <enum>QAbstractItemView::SingleSelection</enum>
          </property>
@@ -189,6 +192,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="useFromVanillaButton">
+           <property name="text">
+            <string>Use Vanilla</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="saveButton">
            <property name="text">
             <string>Save</string>
@@ -202,6 +212,34 @@
     </layout>
    </widget>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>941</width>
+     <height>37</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionSet_Vanilla_Folder"/>
+   </widget>
+   <addaction name="menuFile"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionSet_Vanilla_Folder">
+   <property name="text">
+    <string>Set Vanilla Assets Folder</string>
+   </property>
+  </action>
+  <action name="actionSave_Configuration">
+   <property name="text">
+    <string>Change Config</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

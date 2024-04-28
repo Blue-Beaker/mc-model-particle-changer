@@ -25,6 +25,12 @@ def getAllTextures(data:dict):
                     # textures["__e"+str(i)+"_"+dir]=face['texture']
     return textures
 
+def getTexture(data:dict,texture:str):
+    if 'textures' in data:
+        textures=data['textures']
+        if texture in textures:
+            return textures[texture]
+    return None
 def getParticle(data:dict):
     if 'textures' in data:
         textures=data['textures']
@@ -38,7 +44,7 @@ def getRootDir(path:str):
         path=os.path.join(path,"..")
     return os.path.abspath(path)
 
-def getTexturePath(pack:str,texture:str):
+def getTexturePathFromResourceLocation(pack:str,texture:str):
     split=texture.split(":",1)
     if len(split)==2:
         namespace=split[0]
@@ -48,7 +54,7 @@ def getTexturePath(pack:str,texture:str):
         resourceid=texture
     return os.path.join(pack,"assets",namespace,"textures",resourceid+".png")
 
-def getModelPath(pack:str,model:str):
+def getModelPathFromResourceLocation(pack:str,model:str):
     split=model.split(":",1)
     if len(split)==2:
         namespace=split[0]
@@ -78,23 +84,25 @@ def lookupTexture(pack:str,texture:str,textures:dict):
         tex=texture[1:]
         if tex in textures:
             return lookupTexture(pack,textures[tex],textures)
-    return getTexturePath(pack,texture)
+    return getTexturePathFromResourceLocation(pack,texture)
 
 def lookupParent(pack:str,data:dict):
     if "parent" in data:
-        return getModelPath(pack,data["parent"])
+        return getModelPathFromResourceLocation(pack,data["parent"])
     
-def lookupParentParticle(pack:str,data:dict):
-    try:
-        particle=getParticle(data)
-        if particle:
-            return particle
-        parent=lookupParent(pack,data)
-        if parent:
-            with open(parent,"r") as f:
-                    return lookupParentParticle(pack,json.load(f))
-    except:
-        traceback.print_exc()
+def lookupParentParticle(pack:str,modelPath:str,fallback_pack:str=None):
+    data=readFile(os.path.join(pack,modelPath))
+    particle=getParticle(data)
+    if particle:
+        return particle
+    parent=lookupParent(pack,data)
+    if parent and os.path.exists(parent):
+        return lookupParentParticle(pack,parent)
+    elif fallback_pack:
+        print(f"Falling back for {modelPath}!")
+        return lookupParentParticle(fallback_pack,modelPath)
+    else:
+        print(f"Can't find parent model for {modelPath}!")
 
 def setParticle(particle:str,data:dict):
     data2=copy.deepcopy(data)
